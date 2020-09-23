@@ -86,7 +86,12 @@ Filters are included in the routing separated by country and category.
     -   The script will generate the following lines(please note this is just an example):
     ```vb
     dim CATEGORIES_FILTER
-    CATEGORIES_FILTER=CatFilter("CATEGORIES_LIST",lcase(cultureinfo),"",IOM)
+    Select Case CountryCode
+        Case "FR"
+            CATEGORIES_FILTER = {_1,_2}
+        Case "ES"
+            CATEGORIES_FILTER = {_1,_2}
+    End Select
     ```
 - Update the filters for the questions that need brand filtering by using the dim: 
     ```vb
@@ -95,10 +100,18 @@ Filters are included in the routing separated by country and category.
     -   The script will generate the following lines(please note this is just an example):
     ```vb
     dim BrandFilter
+    Select Case CountryCode
+        Case "FR"
+            BrandFilter = {}
+            if FLAGCAT.ContainsAny({_1}) Then BrandFilter = BrandFilter + {_4,_5,_6,_8,_14,_17,_18,_28,_31,_32}
+            if FLAGCAT.ContainsAny({_2}) Then BrandFilter = BrandFilter + {_2,_7,_22,_23,_25,_26,_27,_29,_30}
+        Case "ES"
+            BrandFilter = {}
+            if FLAGCAT.ContainsAny({_1}) Then BrandFilter = BrandFilter + {_10,_12,_13,_15,_16,_20,_24}
+            if FLAGCAT.ContainsAny({_2}) Then BrandFilter = BrandFilter + {_1,_9,_11,_13,_16,_19,_21,_22,_27,_30}
+    End Select
 
-    BrandFilter=CatFilter("BRANDLIST_TEXT_ONLY",lcase(cultureinfo),FLAGCAT.format("a"),IOM)
-
-    dim brand1,brand4,brand2,brand1439,brand10000346,brand3,brand1438,brand10000347,brand180,brand1437,brand1000208,brand1435,ibrand
+    dim brand2,brand4,brand5,brand6,brand7,brand8,brand14,brand17,brand18,brand22,brand23,brand25,brand26,brand27,brand28,brand29,brand30,brand31,brand32,brand1,brand9,brand10,brand11,brand12,brand13,brand15,brand16,brand19,brand20,brand21,brand24,ibrand
 
     for ibrand=0 to IOM.MDM.Types["BRANDLIST_LOGOS"].Elements.Count-1
         execute("brand"+mid(IOM.MDM.Types["BRANDLIST_LOGOS"].Elements[ibrand].Name,1) = "<img src='https://cdn.ipsosinteractive.com/projects/"+IOM.ProjectName+"/logos/"+CText(LCase(CultureInfo))+"/"+mid(IOM.MDM.Types["BRANDLIST_LOGOS"].Elements[ibrand].Name,1)+".jpg' />")
@@ -110,10 +123,17 @@ Filters are included in the routing separated by country and category.
     ```
     -   The script will generate the following lines (please note this is just an example):
     ```vb
-    dim StateFilt_BIA,StateFilt_ME,StateFilt_BARCON
-    StateFilt_BIA=CatFilter("STATEMENT_LIST_BIA",lcase(cultureinfo),FLAGCAT.format("a"),IOM)
-    StateFilt_ME=CatFilter("STATEMENT_LIST_ME",lcase(cultureinfo),FLAGCAT.format("a"),IOM)
-    StateFilt_BARCON=CatFilter("STATEMENT_LIST_BARCON",lcase(cultureinfo),FLAGCAT.format("a"),IOM)
+    dim StateFilt_ME
+    Select Case CountryCode
+        Case "FR"
+            StateFilt_ME = {}
+            if FLAGCAT.ContainsAny({_2}) Then StateFilt_ME = StateFilt_ME + {_62,_63,_64,_65,_66,_67,_68,_69,_70,_71,_72,_73,_74,_75}
+            if FLAGCAT.ContainsAny({_1}) Then StateFilt_ME = StateFilt_ME + {_62,_63,_64,_65,_66,_67,_68,_69,_70,_71,_72,_73,_74,_75}
+        Case "ES"
+            StateFilt_ME = {}
+            if FLAGCAT.ContainsAny({_2}) Then StateFilt_ME = StateFilt_ME + {_62,_63,_64,_65,_66,_67,_68,_69,_70,_71,_72,_73,_74,_75}
+            if FLAGCAT.ContainsAny({_1}) Then StateFilt_ME = StateFilt_ME + {_62,_63,_64,_65,_66,_67,_68,_69,_70,_71,_72,_73,_74,_75}
+    End Select
     ```
 -  Update the filters for the questions that need touchpoint filtering by using the dim
     ```vb
@@ -121,9 +141,12 @@ Filters are included in the routing separated by country and category.
     ```
     -   The script will generate the following lines (please note this is just an example):
     ```vb
-    dim TouchFilt_RECNONVID,TouchFilt_RECVID
-    TouchFilt_RECNONVID=CatFilter("TOUCHPOINT_LIST",lcase(cultureinfo),FLAGCAT.format("a"),IOM)
-    TouchFilt_RECVID=CatFilter("TOUCHPOINT_LIST",lcase(cultureinfo),FLAGCAT.format("a"),IOM)
+    dim TouchFilt_RECNONVID
+    Select Case CountryCode
+        Case "FR"
+            TouchFilt_RECNONVID = {}
+            if FLAGCAT.ContainsAny({_1}) Then TouchFilt_RECNONVID = TouchFilt_RECNONVID + {_1,_2,_3}
+    End Select
     ```    
 ---
 ## Languages
