@@ -155,13 +155,11 @@ Filters are included in the routing separated by country and category.
 -   If there is additional language in MDD (not included in XML) that is en-GB, the script will continue and labels will be included in the predefined lists for en-GB.
 ---
 ## Wave variable
-> **_NOTE:_**  <font color="red" ><b>Not implemented yet</b></font>
 ```xml
 <wave>
     <name>The label given by the user in XTrack</name>
     <identifier>jn4ch-i385k-lom8-14hdn</identifier>
     <value>8</value>
-    <position>4</position>
 </wave>
 
 ```
@@ -172,10 +170,9 @@ Filters are included in the routing separated by country and category.
 - position: Not needed for SW/DP
 ---
 ## Type of Product variable (for BVC Express)
-> **_NOTE:_**  <font color="red" ><b>Not implemented yet</b></font>
 
 Proposed xml:
 ```xml
-<type>1</type>
+<qtype>1</qtype>
 ```
 Based on the above value we will set a standard Type question in the routing (in case the tag is part of the xml)
