@@ -5,10 +5,12 @@ import re
 import pandas as pd
 import sys
 # import os
-# from glob import glob
+from glob import glob
 
-xmlName = 'Multiple Languages\\Wave-BVC Express Wave-ScriptingExportV2.xml'
-mddName ='Multiple Languages\\S19022784.mdd'
+#xmlName = 'Multiple Languages\\Wave-BVC Express Wave-ScriptingExportV2.xml'
+#mddName ='Multiple Languages\\S19022784.mdd'
+xmlName = glob("*.xml")[0]
+mddName = glob("*.mdd")[0]
 
 #xmlLower = []
 #with open(xmlName, 'r') as f:
@@ -220,7 +222,7 @@ def CreateAdd(lstName, node, currItem):
     mdm.Types.Add(lst)
 
 def SetCatTranslations(findExpression, language, cat, listName, ENG_Default, alternativeLang):
-    if listName.find("BRANDLIST") != -1:
+    if listName == "BRANDLIST_TEXT_ONLY" or listName == "BRANDLIST_LOGOS_LBT" or listName == "BRANDLIST_LOGOS" or listName == "BRANDLIST_CLOSENESS":
         label = root.findall(findExpression+"[code='"+cat.Name+"']/labels/label[@language='"+language.XMLName.lower()+"']")
         if len(label) == 0:
             label = root.findall(findExpression+"[code='"+cat.Name+"']/labels/label[@language='default']")
@@ -348,7 +350,8 @@ for cc in root.iter("country"):
         # listMapping[cc.attrib["code"]][cat.find("code").text] = {}
         for lst in root.iter("list"):
             filterVar = lst.find("scriptlabel").text[1:] #+ "_Filter"
-            dims = dims + filterVar + ","
+            if dims.find(filterVar + ",") == -1:
+                dims = dims + filterVar + ","
             # listMapping[cc.attrib["code"]][cat.find("code").text][filterVar] = ""
             val = ""
             for it in lst.findall("listitems/listitem"):
