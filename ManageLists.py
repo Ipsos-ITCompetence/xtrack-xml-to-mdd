@@ -4,6 +4,8 @@ import xml.etree.ElementTree as ET
 import re
 import pandas as pd
 import sys
+import html
+import getch
 # import os
 from glob import glob
 
@@ -167,6 +169,9 @@ validFormat("code,scriptlabel", root)
 # #==================================================================================================================
 # #============================================    WRITE TO MDD    ==================================================
 # #==================================================================================================================
+def pause():
+  print("Please read the above messages and press any key to continue . . . ")
+  getch.getch()
 
 xmlLangs = ""
 for country in root.iter("language"):
@@ -196,7 +201,9 @@ for lang in xmlLangArray:
 ENG_Default = False
 for lang in mddLangArray:
     if not (lang in xmlLangArray) and lang != "en-gb":
-        errorMsg = errorMsg + "Language " + lang + " not present in XML but present in MDD.\n"
+        print("Language " + lang + " not present in XML but present in MDD.\n")
+        pause()
+        print("ManageLists.py is running\n")
     else:
         if lang == "en-gb":
             ENG_Default = True
@@ -229,7 +236,7 @@ def SetCatTranslations(findExpression, language, cat, listName, ENG_Default, alt
             if len(label) == 0 and ENG_Default:
                 label = root.findall(findExpression+"[code='"+cat.Name+"']/labels/label[@language='"+alternativeLang+"']") 
         
-        labelTxt = label[0].attrib['text']
+        labelTxt = html.escape(label[0].attrib['text'])
         if listName == "BRANDLIST_TEXT_ONLY":
             cat.Labels.Text = labelTxt
         elif listName == "BRANDLIST_LOGOS_LBT":
@@ -241,13 +248,13 @@ def SetCatTranslations(findExpression, language, cat, listName, ENG_Default, alt
     else:
         label = root.findall(findExpression + "[@language='"+language.XMLName.lower()+"']")
         if len(label)>0:
-            cat.Labels.Text = label[0].attrib['text']
+            cat.Labels.Text = html.escape(label[0].attrib['text'])
         else:
             label = root.findall(findExpression + "[@language='default']")
             if len(label) == 0 and ENG_Default:
                 label = root.findall(findExpression + "[@language='"+alternativeLang+"']") 
             if len(label)>0:
-                cat.Labels.Text = label[0].attrib['text'] 
+                cat.Labels.Text = html.escape(label[0].attrib['text'])
 
 branddim = ""
 
@@ -276,6 +283,8 @@ alternativeLang = ""
 if ENG_Default:
     alternativeLang = xmlLangArray[0]
 for language in mdm.Languages:
+    if not(language.xmlName.lower() in xmlLangArray) and language.xmlName.lower() != "en-gb":
+        continue
     mdm.Languages.Current=language
 
     #Update wave and qtype
