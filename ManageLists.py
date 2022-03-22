@@ -66,6 +66,8 @@ for el in root.iter():
         if st == 'language':
             el.attrib[st] = el.attrib[st].lower()
             el.attrib[st] = LangWorkaround(el.attrib[st])
+        if st == 'countryname':
+            el.attrib[st] = el.attrib[st].lower()    
 
 def checkSubElements(node, elementsString, multipleInst):
     for el in elementsString.split(","):
@@ -136,8 +138,8 @@ for item in listsList.findall("list"):
             checkInnerChild(label, "label", True)
             maps = it.find("mapping")   
             checkInnerChild(maps, "map", True)
-            #attrib = it.find("attributes")
-            #checkInnerChild(attrib, "attribute", True)
+            attrib = it.find("attributes")
+            checkInnerChild(attrib, "attribute", True)
             code = it.find("code")
             if code != None:
                 CodesList.append(code.text)
@@ -160,7 +162,7 @@ checkAttrib("attribute", "label,country,value", root)
 def validFormat(nodes, root):
     for nd in nodes.split(","):
         for item in root.iter(nd):
-            result = re.match("^(?i)[a-zA-Z_]{1}[a-zA-Z_\d]{0,127}$", item.text)
+            result = re.match("^((?i)[a-zA-Z_]{1}\w*)$", item.text)
             if result == None:
                 print(item.tag + " has invalid format: " + item.text)   
 
@@ -372,6 +374,37 @@ for cc in root.iter("country"):
             writeFilter = writeFilter + "\t\t\t" + filterVar + "=" + filterVar + " + {" + val[:-1] + "}\n"
 
         writeFilter = writeFilter + "\t\tEnd If\n"    
+writeFilter = writeFilter + "End Select\n"
+
+#Add custom filters from attributes
+attribFilter = {}
+attribDims = ""
+for lst in root.iter("list"):
+    for it in lst.findall("listitems/listitem"):
+        for att in it.findall("attributes/attribute"):
+            countryName = att.attrib['country'].lower()
+            if not (countryName in attribFilter):
+                attribFilter[countryName] = {}    
+            fltrName = (att.attrib['label'] + "_" + att.attrib['value']).lower()   
+            if not (fltrName in attribFilter[countryName]):
+                attribFilter[countryName][fltrName] = it.find("code").text
+                if not ("," + fltrName in attribDims):
+                    attribDims = attribDims + "," + fltrName
+            else:
+                attribFilter[countryName][fltrName] += "," + it.find("code").text 
+
+writeFilter = writeFilter + "Dim " + attribDims[1:] + "\n"
+writeFilter = writeFilter + "Select Case COUNTRY_\n"
+for key in attribFilter:
+    if key != 'default':
+        #writeFilter = writeFilter + "\tCase {" + root.find("countries/country[@countryname='"+key+"']").attrib['code'] + "}\n"
+        writeFilter = writeFilter + "\tCase {" + key + "}\n"
+        for fltr in attribFilter[key]:
+            writeFilter = writeFilter + "\t\t" + fltr + " = " + attribFilter[key][fltr] + "\n"
+if 'default' in attribFilter:
+    writeFilter = writeFilter + "\tCase Else\n"
+    for fltr in attribFilter['default']:
+        writeFilter = writeFilter + "\t\t" + fltr + " = " + attribFilter['default'][fltr] + "\n"  
 writeFilter = writeFilter + "End Select\n"
 
 if  routingscript.find("'*** Start--List--Filters ***")!=-1 and \
