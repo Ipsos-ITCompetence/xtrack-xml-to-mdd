@@ -6,6 +6,7 @@ import pandas as pd
 import sys
 import html
 import getch
+import numpy
 # import os
 from glob import glob
 
@@ -60,7 +61,8 @@ def LangWorkaround(elem):
 for el in root.iter():
     el.tag = el.tag.lower()
     if el.tag == 'scriptlabel':
-        el.text = el.text.lower()
+        if el.text != None:
+            el.text = el.text.lower()
     for st in el.attrib:
         st = st.lower()
         if st == 'language':
@@ -160,9 +162,10 @@ checkAttrib("attribute", "label,country,value", root)
 def validFormat(nodes, root):
     for nd in nodes.split(","):
         for item in root.iter(nd):
-            result = re.match("^(?i)[a-zA-Z_]{1}[a-zA-Z_\d]{0,127}$", item.text)
-            if result == None:
-                print(item.tag + " has invalid format: " + item.text)   
+            if item.text != None:
+                result = re.match("^(?i)[a-zA-Z_]{1}[a-zA-Z_\d]{0,127}$", item.text)
+                if result == None:
+                    print(item.tag + " has invalid format: " + item.text)   
 
 validFormat("code,scriptlabel", root)
 
@@ -373,6 +376,31 @@ for cc in root.iter("country"):
 
         writeFilter = writeFilter + "\t\tEnd If\n"    
 writeFilter = writeFilter + "End Select\n"
+
+TPfilter_arr = {}
+for cc in root.iter("mapping-groups"):
+    for mg in cc.findall("mapping-group/mappings"):
+        tpFilter = mg.find("scriptlabel").attrib["tp_label"].lower()[1:]
+        for tp in root.findall("lists/list[scriptlabel='_"+tpFilter+"']/listitems/listitem/code"):
+            if not tpFilter in TPfilter_arr:
+                TPfilter_arr[tpFilter] = {}
+            filterCats = ','.join([str(elem) for elem in [st.attrib['st_code'] for st in cc.findall("mapping-group/mappings[@tp_code='" + tp.text + "']/scriptlabel[@tp_label='"+mg.find("scriptlabel").attrib["tp_label"]+"']..mapping")]])     
+            if filterCats != "":
+                if not tp.text in TPfilter_arr[tpFilter]:
+                    TPfilter_arr[tpFilter][tp.text] = {}                
+                TPfilter_arr[tpFilter][tp.text][mg.find("scriptlabel").attrib["st_label"].lower()[1:]] = "{" + filterCats + "}"
+            
+for filter in TPfilter_arr:
+    writeFilter = writeFilter + "Select Case " + filter + "\n"
+    for cat in TPfilter_arr[filter]:
+        writeFilter = writeFilter + "\tCase {" + cat + "}\n"
+        for stlist in TPfilter_arr[filter][cat]:
+            if dims.find(stlist+",") != -1: 
+                writeFilter = writeFilter + "\t\t" + stlist + " = " + stlist + "*" + TPfilter_arr[filter][cat][stlist] + "\n"
+            else:
+                dims = dims + stlist + "," 
+                writeFilter = writeFilter + "\t\t" + stlist + " = " + TPfilter_arr[filter][cat][stlist] + "\n"    
+    writeFilter = writeFilter + "End Select\n"
 
 if  routingscript.find("'*** Start--List--Filters ***")!=-1 and \
         routingscript.find("'*** End--List--Filters ***")!=-1:
