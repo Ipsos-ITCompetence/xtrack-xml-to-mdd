@@ -339,7 +339,7 @@ for language in mdm.Languages:
 
 #Update routing
 routingscript = mdm.Routing.Script
-#routingscript = routingscript.replace("QTYPE.Response.Value={_1}","QTYPE.Response.Value={_" + root.find("qtype").text  + "}")
+routingscript = routingscript.replace("QTYPE.Response.Value={_1}","QTYPE.Response.Value={_" + root.find("qtype").text  + "}")
 routingscript = routingscript.replace("WAVE_NAME.Response.Value=\"\"","WAVE_NAME.Response.Value=\"" + wave.find("name").text + "\"")
 routingscript = routingscript.replace("WAVE_IDENTIFIER.Response.Value=\"\"","WAVE_IDENTIFIER.Response.Value=\"" + wave.find("identifier").text + "\"")
 routingscript = routingscript.replace("Wave.Response.Value=""\"\"","Wave.Response.Value=\""+wave.find("value").text + "\"")
@@ -385,7 +385,7 @@ attribDims = ""
 for lst in root.iter("list"):
     for it in lst.findall("listitems/listitem"):
         for att in it.findall("attributes/attribute"):
-            countryName = att.attrib['country'].lower()
+            countryName = att.attrib['countrycode'].lower()
             if not (countryName in attribFilter):
                 attribFilter[countryName] = {}    
             fltrName = (att.attrib['label'] + "_" + att.attrib['value']).lower()   
