@@ -338,18 +338,19 @@ for language in mdm.Languages:
     print("Translations for " + language.XMLName + " are added!")
 
 #Update routing
-routingscript = mdm.Routing.Script
-routingscript = routingscript.replace("QTYPE.Response.Value={_1}","QTYPE.Response.Value={_" + root.find("qtype").text  + "}")
-routingscript = routingscript.replace("WAVE_NAME.Response.Value=\"\"","WAVE_NAME.Response.Value=\"" + wave.find("name").text + "\"")
-routingscript = routingscript.replace("WAVE_IDENTIFIER.Response.Value=\"\"","WAVE_IDENTIFIER.Response.Value=\"" + wave.find("identifier").text + "\"")
-routingscript = routingscript.replace("Wave.Response.Value=""\"\"","Wave.Response.Value=\""+wave.find("value").text + "\"")
-
-
-
-# listMapping = {}
+writeFilter = ""
+writeFilter = writeFilter + "QTYPE.Response.Value={_" + root.find("qtype").text  + "}\n"
+writeFilter = writeFilter + "WAVE_NAME.Response.Value=\"" + wave.find("name").text + "\"\n"
+writeFilter = writeFilter + "WAVE_IDENTIFIER.Response.Value=\"" + wave.find("identifier").text + "\"\n"
+writeFilter = writeFilter + "Wave.Response.Value=\""+wave.find("value").text + "\"\n"
+if root.find("flagtimescale") != None:
+    writeFilter = writeFilter + "FLAGTIMESCALE.Response.Value={_"+root.find("flagtimescale").text + "}\n"
+if root.find("flagprovider") != None:
+    writeFilter = writeFilter + "FLAGPROVIDER.Response.Value={_"+root.find("flagprovider").text + "}\n"
+writeFilter = writeFilter + "\n"
 
 branddim=branddim+"ibrand"
-writeFilter = "dim " + branddim + "\n\n"
+writeFilter = writeFilter + "dim " + branddim + "\n\n"
 writeFilter = writeFilter + "For ibrand=0 to IOM.MDM.Types[\"BRANDLIST_LOGOS\"].Elements.Count-1\n\t"
 writeFilter = writeFilter + "execute(\"brand\"+mid(IOM.MDM.Types[\"BRANDLIST_LOGOS\"].Elements[ibrand].Name,1) +\" = \"\"<img src='https://cdn.ipsosinteractive.com/projects/\"+IOM.ProjectName+\"/img/\"+CText(LCase(CultureInfo))+\"/logos/\"+mid(IOM.MDM.Types[\"BRANDLIST_LOGOS\"].Elements[ibrand].Name,1)+\".jpg' />\"\"\")\n"
 writeFilter = writeFilter + "Next\n\n"
@@ -435,6 +436,8 @@ for filter in TPfilter_arr:
                 dims = dims + stlist + "," 
                 writeFilter = writeFilter + "\t\t" + stlist + " = " + TPfilter_arr[filter][cat][stlist] + "\n"    
     writeFilter = writeFilter + "End Select\n"
+
+routingscript = mdm.Routing.Script
 
 if  routingscript.find("'*** Start--List--Filters ***")!=-1 and \
         routingscript.find("'*** End--List--Filters ***")!=-1:
