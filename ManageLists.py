@@ -138,8 +138,8 @@ for item in listsList.findall("list"):
             #attributes
             label = it.find("labels")
             checkInnerChild(label, "label", True)
-            maps = it.find("mapping")   
-            checkInnerChild(maps, "map", True)
+            #maps = it.find("mapping")   
+            #checkInnerChild(maps, "map", True)
             attrib = it.find("attributes")
             checkInnerChild(attrib, "attribute", True)
             code = it.find("code")
@@ -165,7 +165,7 @@ def validFormat(nodes, root):
     for nd in nodes.split(","):
         for item in root.iter(nd):
             if item.text != None:
-                result = re.match("^((?i)[a-zA-Z_]{1}\w*)$", item.text)
+                result = re.match("(?i)^([a-zA-Z_]{1}\w*)$", item.text)
                 if result == None:
                     print(item.tag + " has invalid format: " + item.text)   
 
@@ -186,10 +186,6 @@ xmlLangs = xmlLangs[:-1]
 mdm = Dispatch( 'MDM.Document' )
 mdm.Open(mddName, "LATEST", 2)
 
-# f = open("routing.vb", "a", encoding="UTF-8")
-# f.write(mdm.Routing.Script)
-# f.close()
-
 mddLangs = ""
 for language in mdm.Languages:
     mddLangs = mddLangs + language.XMLName.lower() + ","
@@ -199,19 +195,18 @@ xmlLangArray = xmlLangs.split(",")
 mddLangArray = mddLangs.split(",")
 
 errorMsg = ""
-for lang in xmlLangArray:
-    if not (lang in mddLangArray):
-        errorMsg = errorMsg + "Language " + lang + " not present in MDD but present in XML.\n"
+XMLonlyLangs = [l for l in xmlLangArray if not (l in mddLangArray) and l != "en-gb"]
+if len(XMLonlyLangs) > 0:
+    errorMsg = errorMsg + "Language " + str(XMLonlyLangs) + " not present in MDD but present in XML.\n"
 
 ENG_Default = False
-for lang in mddLangArray:
-    if not (lang in xmlLangArray) and lang != "en-gb":
-        print("Language " + lang + " not present in XML but present in MDD.\n")
-        pause()
-        print("ManageLists.py is running\n")
-    else:
-        if lang == "en-gb":
-            ENG_Default = True
+MDDonlyLangs = [l for l in mddLangArray if not (l in xmlLangArray) and l != "en-gb"]
+if len(MDDonlyLangs) > 0:
+    print("Language " + str(MDDonlyLangs) + " not present in XML but present in MDD.\n")
+    pause()
+    print("ManageLists.py is running\n")  
+if "en-gb" in mddLangArray and "en-gb" not in xmlLangArray:
+    ENG_Default = True
 
 wLogFile=open('ErrorLog.csv', 'a+', encoding='utf-16')
 if errorMsg != "":
@@ -233,8 +228,8 @@ def CreateAdd(lstName, node, currItem):
 	
     mdm.Types.Add(lst)
 
-def SetCatTranslations(findExpression, language, cat, listName, ENG_Default, alternativeLang):
-    if listName == "BRANDLIST_TEXT_ONLY" or listName == "BRANDLIST_LOGOS_LBT" or listName == "BRANDLIST_LOGOS" or listName == "BRANDLIST_CLOSENESS":
+def SetCatTranslations(findExpression, language, cat, listName, ENG_Default, alternativeLang, ifBrandListName):
+    if ifBrandListName != "":
         label = root.findall(findExpression+"[code='"+cat.Name+"']/labels/label[@language='"+language.XMLName.lower()+"']")
         if len(label) == 0:
             label = root.findall(findExpression+"[code='"+cat.Name+"']/labels/label[@language='default']")
@@ -242,13 +237,13 @@ def SetCatTranslations(findExpression, language, cat, listName, ENG_Default, alt
                 label = root.findall(findExpression+"[code='"+cat.Name+"']/labels/label[@language='"+alternativeLang+"']") 
         
         labelTxt = html.escape(label[0].attrib['text'])
-        if listName == "BRANDLIST_TEXT_ONLY":
+        if listName == ifBrandListName+"_TEXT_ONLY":
             cat.Labels.Text = labelTxt
-        elif listName == "BRANDLIST_LOGOS_LBT":
+        elif listName == ifBrandListName+"_LOGOS_LBT":
             cat.Labels.Text = "{#brand" + cat.Name.replace("_","") + "}<br/><span style='display:none'>" + labelTxt + "</span>"
-        elif listName == "BRANDLIST_LOGOS": 
+        elif listName == ifBrandListName+"_LOGOS": 
             cat.Labels.Text = "<center>{#brand" + cat.Name.replace("_","") + "}<br/>" + labelTxt + "</center>"                     
-        elif listName == "BRANDLIST_CLOSENESS":        
+        elif listName == ifBrandListName+"_CLOSENESS":        
             cat.Labels.Text = "{#brand" + cat.Name.replace("_","") + "}<br/><span class='closeness-hidden-content'>" + labelTxt + "</span>"
     else:
         label = root.findall(findExpression + "[@language='"+language.XMLName.lower()+"']")
@@ -267,13 +262,15 @@ branddim = ""
 CreateAdd("CATEGORIES_LIST", "categories/category", root)
 
 #Creating Lists
+brandListsArray = []
 for list in root.iter("list"):
     listName = list.find("scriptlabel").text
-    if listName[1:] == "brand_list":
-        CreateAdd("BRANDLIST_TEXT_ONLY", "listitems/listitem", list)
-        CreateAdd("BRANDLIST_LOGOS_LBT", "listitems/listitem", list)
-        CreateAdd("BRANDLIST_LOGOS", "listitems/listitem", list)
-        CreateAdd("BRANDLIST_CLOSENESS", "listitems/listitem", list)    
+    if list.find("type").text.lower() == "brand":
+        brandListsArray.append(listName[1:])
+        CreateAdd(listName[1:]+"_TEXT_ONLY", "listitems/listitem", list)
+        CreateAdd(listName[1:]+"_LOGOS_LBT", "listitems/listitem", list)
+        CreateAdd(listName[1:]+"_LOGOS", "listitems/listitem", list)
+        CreateAdd(listName[1:]+"_CLOSENESS", "listitems/listitem", list)    
         for item in list.findall("listitems/listitem"):
             catCode = item.find("code").text
             if (catCode[1:] != "990" and catCode[1:] != "998" and catCode[1:] != "999"):
@@ -304,9 +301,10 @@ for language in mdm.Languages:
     if len(mdmObject) > 0:
         ExplInsert = True
     for item in mdm.Types:
+        ifBrandListName = item.FullName.replace("_TEXT_ONLY","").replace("_LOGOS_LBT","").replace("_LOGOS","").replace("_CLOSENESS","")
         for cat in item.Elements:
             if item.FullName == "CATEGORIES_LIST":        
-                SetCatTranslations("categories/category[code='"+cat.Name+"']/labels/label", language, cat, item.FullName, ENG_Default, alternativeLang)      
+                SetCatTranslations("categories/category[code='"+cat.Name+"']/labels/label", language, cat, item.FullName, ENG_Default, alternativeLang, "")      
                 if ExplInsert:
                     mdmCat = [c for c in mdmObject[0].Elements if c.Name == cat.Name] 
                     label = root.findall("categories/category[code='"+cat.Name+"']/description/label[@language='"+language.XMLName.lower()+"']")
@@ -321,13 +319,13 @@ for language in mdm.Languages:
                         else:
                             elem = mdm.CreateElement(cat.Name, label[0].attrib["text"])
                             mdmObject[0].Elements.Add(elem)                                   
-            elif item.FullName.find("BRANDLIST") != -1:
-                SetCatTranslations("lists/list[scriptlabel='_brand_list']/listitems/listitem", language, cat, item.FullName, ENG_Default, alternativeLang)                                     
+            elif ifBrandListName in brandListsArray:
+                SetCatTranslations("lists/list[scriptlabel='_" + ifBrandListName + "']/listitems/listitem", language, cat, item.FullName, ENG_Default, alternativeLang, ifBrandListName)                                     
             else:                              
                 lstName = root.findall("lists/list[scriptlabel='_"+item.FullName+"']")
                 if len(lstName)>0:
-                    SetCatTranslations("lists/list[scriptlabel='_"+item.FullName+"']/listitems/listitem[code='"+cat.Name+"']/labels/label", language, cat, item.FullName, ENG_Default, alternativeLang)
-    
+                    SetCatTranslations("lists/list[scriptlabel='_"+item.FullName+"']/listitems/listitem[code='"+cat.Name+"']/labels/label", language, cat, item.FullName, ENG_Default, alternativeLang, "")
+
     if ExplInsert:
         for cat in mdmObject[0].Elements:
             mdmCat = [c for c in mdm.Types["CATEGORIES_LIST"].Elements if c.Name == cat.Name]
@@ -369,13 +367,14 @@ for cc in root.iter("country"):
                 dims = dims + filterVar + ","
             # listMapping[cc.attrib["code"]][cat.find("code").text][filterVar] = ""
             val = ""
-            for it in lst.findall("listitems/listitem"):
+            for it in lst.findall("listitems/listitem"):           
                 map = it.findall("mapping/map[@countrycode=\"" + cc.attrib["code"] + "\"][@categorycode=\"" + cat.find("code").text + "\"]")
                 if len(map) > 0:
                     val = val + it.find("code").text + ","
 
             # listMapping[cc.attrib["code"]][cat.find("code").text][filterVar] = val[:-1]
-            writeFilter = writeFilter + "\t\t\t" + filterVar + "=" + filterVar + " + {" + val[:-1] + "}\n"
+            if val != "":
+                writeFilter = writeFilter + "\t\t\t" + filterVar + "=" + filterVar + " + {" + val[:-1] + "}\n"
 
         writeFilter = writeFilter + "\t\tEnd If\n"    
 writeFilter = writeFilter + "End Select\n"
@@ -404,11 +403,11 @@ for key in attribFilter:
         #writeFilter = writeFilter + "\tCase {" + root.find("countries/country[@countryname='"+key+"']").attrib['code'] + "}\n"
         writeFilter = writeFilter + "\tCase {" + key + "}\n"
         for fltr in attribFilter[key]:
-            writeFilter = writeFilter + "\t\t" + fltr + " = " + attribFilter[key][fltr] + "\n"
+            writeFilter = writeFilter + "\t\t" + fltr + " = {" + attribFilter[key][fltr] + "}\n"
 if 'default' in attribFilter:
     writeFilter = writeFilter + "\tCase Else\n"
     for fltr in attribFilter['default']:
-        writeFilter = writeFilter + "\t\t" + fltr + " = " + attribFilter['default'][fltr] + "\n"  
+        writeFilter = writeFilter + "\t\t" + fltr + " = {" + attribFilter['default'][fltr] + "}\n"  
 writeFilter = writeFilter + "End Select\n"
 
 #Mapping-group filters
