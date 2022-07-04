@@ -1,159 +1,91 @@
 # XTrack-xml-to-mdd
 
+ManageLists.py was designed to simplify lists creation using information stored in an XML exported from XTrack.
+Script functionalities:
+- validates the XML input for required nodes and attributes
+- validates if the list names and category codes to be inputed follow the dimenssions naming convention
+- validates that all the languages present in the XML are available in the input MDD and stops the execution if there is a missing language.
+- validates that all the languages present in the MDD are available in the input XML and prints a warning if there is a missing language
+- creates in the metadata the lists from the XML and adds translations for the presented languages
+- updates QTYPE, WAVE_NAME, WAVE_IDENTIFIER, wave variables metadata and routing based on the values presented in the input XML
+- updates EXPLANATION_INSERT variable metadata based on the values presented in the input XML.
+- creates routing (filters) based on the information from the mapping, attributes and mapping-groups nodes
+
 ## METADATA 
-- All languages must have the following lists integrated, exactly as below:
-```vb
-CATEGORIES_LIST "" define
-{
-    _1 "cat1",
-    _2 "cat2"
-};
-BRANDLIST_TEXT_ONLY "" define
-{
-    _1 "brand1",
-    _2 "brand2"
-};
-BRANDLIST_LOGOS "" define
-{
-    _1 "brand1",
-    _2 "brand2"
-};
-BRANDLIST_CLOSENESS "" define
-{
-    _1 "brand1",
-    _2 "brand2"
-};
-BRANDLIST_TEXT_LOGO "" define
-{
-    _1 "brand1",
-    _2 "brand2"
-};
-STATEMENT_LIST "" define
-{
-    _1 "statement1",
-    _2 "statement2"
-};
-TOUCHPOINT_LIST "" define
-{
-    _1 "touchpoint1",
-    _2 "touchpoint2"
-};
 
-```
-- All questions that use the lists above must be updated with the new ones.
-- The questions that contain Statement Lists and TouchPoint lists must contain the lists in the following format:<br/>
-    STATEMENT_LIST_<span style="background-color: blue">QUESTIONNAME</span><br/>
-    TOUCHPOINT_LIST_<span style="background-color: blue">QUESTIONNAME</span>
+- Variables QTYPE, WAVE_NAME, WAVE_IDENTIFIER, wave and EXPLANATION_INSERT must be defined in the metadata (in the respective format).
+Example:
 
-    * Ex: <br/>
-        STATEMENT_LIST_<span style="background-color: blue">BIA</span><br/>
-        TOUCHPOINT_LIST_<span style="background-color: blue">RECNONVID</span>
-    <br/>    
-    The Statement Lists and Touchpoint lists are separated by question
+    ```vb
+        QTYPE "Type of Product"
+        categorical [1..1]
+        {
+            _1 "BVC Express Full BVC",
+            _2 "BVC Express AE",
+            _3 "NON BVC Express"
+        };
+
+        WAVE_NAME "wave1 - (Version: 3 Final)"
+            [
+                IIS_IncludeOEinCEExport = true
+            ]
+        text [1..4000];
+
+        WAVE_IDENTIFIER "61a64e24f4ba08000103ce81"
+            [
+                IIS_IncludeOEinCEExport = true
+            ]
+        text [1..24];
+
+        Wave "3"
+            [
+                IIS_StandardShellTranslated = 1,
+                IIS_CoreQuestionDescription = "Sample-Core-Questions",
+                IIS_ExcludeFromDataExport = false,
+                IIS_IncludeOEinCEExport = true
+            ]
+        text [0..3];  
+
+        EXPLANATION_INSERT ""
+            [
+                IIS_ExcludeFromDataExport = false
+            ]
+        categorical [1..1]
+        {
+            _1 "brands offering high-quality clothing and accessories."
+        };
+    ```
+
+- Lists BRANDLIST_TEXT_ONLY, BRANDLIST_LOGOS_LBT, BRANDLIST_LOGOS, BRANDLIST_CLOSENESS are the predefined names that will be used for the cration of the brand lists. Those lists will be automatically created/update on each execution. 
+!Note: There should not be other lists containing "BRANDLIST" in their name
+
+- CATEGORIES_LIST will be automatically created/update on each execution
+
 ---
 ## ROUTING
-Filters are included in the routing separated by country and category.
 
-- Delete all dims used for the brand image insert (dim brand1,brand2, …)
-- Before the first question that uses CATEGORIES_LIST add the following placeholders:
-```vb
-'INSERT CATEGORY FILTER BELOW
+- Multiple filteres are automatically applied in the routing. In order to have those implemented you should place the below placeholder in the routing:
+    ```vb
+   '*** Start--List--Filters ***
 
-'INSERT CATEGORY FILTER ABOVE
-```
-- Before the first question that uses a BRANDLIST add the following placeholders:
-```vb
-'INSERT BRAND FILTER AND IMAGES BELOW
+   '*** End--List--Filters ***
+    ```
+!Note: All the filters created are custom dims, which should be assigned as specific filter to the respective variables manually.
 
-'INSERT BRAND FILTER AND IMAGES ABOVE
-```
-- Before the first question that uses a STATEMENTLIST add the following placeholders:
-```vb
-'INSERT STATEMENTS FILTER BELOW
+The filters include:
+* list items filter based on country and category
+* statements filters based on touchpoints
+* custom attribute/value pair filters
 
-'INSERT STATEMENTS FILTER ABOVE
-```
-- Before the first question that uses TOUCHPOINT_LIST add the following placeholders:
-```vb
-'INSERT TOUCHPOINTS FILTER BELOW
+- Make sure you do not have "ibrand" dim in the routing as well as any "brandX" (where X is a number) dims, as those will be generated by the automation.
 
-'INSERT TOUCHPOINTS FILTER ABOVE
-```
-- Update the filters for the questions that need categories filtering by using the dim: 
-    ```vb
-    CATEGORIES_FILTER
-    ```
-    -   The script will generate the following lines(please note this is just an example):
-    ```vb
-    dim CATEGORIES_FILTER
-    Select Case CountryCode
-        Case "FR"
-            CATEGORIES_FILTER = {_1,_2}
-        Case "ES"
-            CATEGORIES_FILTER = {_1,_2}
-    End Select
-    ```
-- Update the filters for the questions that need brand filtering by using the dim: 
-    ```vb
-    BrandFilter
-    ```
-    -   The script will generate the following lines(please note this is just an example):
-    ```vb
-    dim BrandFilter
-    Select Case CountryCode
-        Case "FR"
-            BrandFilter = {}
-            if FLAGCAT.ContainsAny({_1}) Then BrandFilter = BrandFilter + {_4,_5,_6,_8,_14,_17,_18,_28,_31,_32}
-            if FLAGCAT.ContainsAny({_2}) Then BrandFilter = BrandFilter + {_2,_7,_22,_23,_25,_26,_27,_29,_30}
-        Case "ES"
-            BrandFilter = {}
-            if FLAGCAT.ContainsAny({_1}) Then BrandFilter = BrandFilter + {_10,_12,_13,_15,_16,_20,_24}
-            if FLAGCAT.ContainsAny({_2}) Then BrandFilter = BrandFilter + {_1,_9,_11,_13,_16,_19,_21,_22,_27,_30}
-    End Select
-
-    dim brand2,brand4,brand5,brand6,brand7,brand8,brand14,brand17,brand18,brand22,brand23,brand25,brand26,brand27,brand28,brand29,brand30,brand31,brand32,brand1,brand9,brand10,brand11,brand12,brand13,brand15,brand16,brand19,brand20,brand21,brand24,ibrand
-
-    for ibrand=0 to IOM.MDM.Types["BRANDLIST_LOGOS"].Elements.Count-1
-        execute("brand"+mid(IOM.MDM.Types["BRANDLIST_LOGOS"].Elements[ibrand].Name,1) = "<img src='https://cdn.ipsosinteractive.com/projects/"+IOM.ProjectName+"/logos/"+CText(LCase(CultureInfo))+"/"+mid(IOM.MDM.Types["BRANDLIST_LOGOS"].Elements[ibrand].Name,1)+".jpg' />")
-    next
-    ```
--   Update the filters for the questions that need statement filtering by using the dim:
-    ```vb
-    StateFilt_QuestionName
-    ```
-    -   The script will generate the following lines (please note this is just an example):
-    ```vb
-    dim StateFilt_ME
-    Select Case CountryCode
-        Case "FR"
-            StateFilt_ME = {}
-            if FLAGCAT.ContainsAny({_2}) Then StateFilt_ME = StateFilt_ME + {_62,_63,_64,_65,_66,_67,_68,_69,_70,_71,_72,_73,_74,_75}
-            if FLAGCAT.ContainsAny({_1}) Then StateFilt_ME = StateFilt_ME + {_62,_63,_64,_65,_66,_67,_68,_69,_70,_71,_72,_73,_74,_75}
-        Case "ES"
-            StateFilt_ME = {}
-            if FLAGCAT.ContainsAny({_2}) Then StateFilt_ME = StateFilt_ME + {_62,_63,_64,_65,_66,_67,_68,_69,_70,_71,_72,_73,_74,_75}
-            if FLAGCAT.ContainsAny({_1}) Then StateFilt_ME = StateFilt_ME + {_62,_63,_64,_65,_66,_67,_68,_69,_70,_71,_72,_73,_74,_75}
-    End Select
-    ```
--  Update the filters for the questions that need touchpoint filtering by using the dim
-    ```vb
-    TouchFilt_QuestionName
-    ```
-    -   The script will generate the following lines (please note this is just an example):
-    ```vb
-    dim TouchFilt_RECNONVID
-    Select Case CountryCode
-        Case "FR"
-            TouchFilt_RECNONVID = {}
-            if FLAGCAT.ContainsAny({_1}) Then TouchFilt_RECNONVID = TouchFilt_RECNONVID + {_1,_2,_3}
-    End Select
-    ```    
 ---
 ## Languages
--   If there are more language in XML than in MDD, an error is displayed
--   If there is additional language in MDD (not included in XML) that is not en-GB, an error is displayed
+-   If there are more language in XML than in MDD, an error is displayed and the execution is interrupted.
+-   If there is additional language in MDD (not included in XML) that is not en-GB, a message is displayed and the script will be baused until you press a random key.
 -   If there is additional language in MDD (not included in XML) that is en-GB, the script will continue and labels will be included in the predefined lists for en-GB.
 ---
+
 ## Wave variable
 ```xml
 <wave>
@@ -171,7 +103,6 @@ Filters are included in the routing separated by country and category.
 ---
 ## Type of Product variable (for BVC Express)
 
-Proposed xml:
 ```xml
 <qtype>1</qtype>
 ```
