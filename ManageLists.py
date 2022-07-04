@@ -61,7 +61,7 @@ def LangWorkaround(elem):
 for el in root.iter():
     el.tag = el.tag.lower()
     if el.tag == 'scriptlabel':
-        if el.text != None:
+        if el.text != None and el.text != "_BRANDLIST":
             el.text = el.text.lower()
     for st in el.attrib:
         st = st.lower()
