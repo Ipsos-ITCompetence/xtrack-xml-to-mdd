@@ -27,6 +27,13 @@ xmltree = ET.parse(xmlName)
 root = xmltree.getroot()
 #root = ET.fromstring(xmlLower)
 
+def replaceChar(val):
+    val = val.replace("’","&#39;")
+    val = val.replace("'","&#39;")
+    val = val.replace("/","&#47;")
+
+    return val
+
 def LangWorkaround(elem):
     elem = elem.lower()
     if elem in ["en-sa","en-ae","en-eg","en-qa","en-lb","en-jo","en-kw","en-iq","en-pk"]:    	
@@ -236,7 +243,7 @@ def SetCatTranslations(findExpression, language, cat, listName, ENG_Default, alt
             if len(label) == 0 and ENG_Default:
                 label = root.findall(findExpression+"[code='"+cat.Name+"']/labels/label[@language='"+alternativeLang+"']") 
         
-        labelTxt = html.escape(label[0].attrib['text'])
+        labelTxt = replaceChar(html.escape(label[0].attrib['text']))
         if listName == ifBrandListName+"_TEXT_ONLY":
             cat.Labels.Text = labelTxt
         elif listName == ifBrandListName+"_LOGOS_LBT":
@@ -248,13 +255,13 @@ def SetCatTranslations(findExpression, language, cat, listName, ENG_Default, alt
     else:
         label = root.findall(findExpression + "[@language='"+language.XMLName.lower()+"']")
         if len(label)>0:
-            cat.Labels.Text = html.escape(label[0].attrib['text'])
+            cat.Labels.Text = replaceChar(html.escape(label[0].attrib['text']))
         else:
             label = root.findall(findExpression + "[@language='default']")
             if len(label) == 0 and ENG_Default:
                 label = root.findall(findExpression + "[@language='"+alternativeLang+"']") 
             if len(label)>0:
-                cat.Labels.Text = html.escape(label[0].attrib['text'])
+                cat.Labels.Text = replaceChar(html.escape(label[0].attrib['text']))
 
 branddim = ""
 
